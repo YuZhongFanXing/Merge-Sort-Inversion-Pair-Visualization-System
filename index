@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>归并排序逆序对可视化系统</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+  background: #eef2f7;
+  min-height: 100vh;
+  color: #1e293b;
+}
+
+.app {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 28px 20px 40px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+header h1 {
+  font-size: 30px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.5px;
+}
+
+header p {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.top-section {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 14px;
+  align-items: stretch;
+}
+
+.card {
+  background: white;
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.03);
+}
+
+.input-card { flex: 1; }
+.stats-card { width: 310px; }
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 14px;
+}
+
+.input-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.array-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+  color: #1e293b;
+}
+
+.array-input:focus { border-color: #3b82f6; }
+
+.btn-update {
+  padding: 10px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.btn-update:hover { background: #2563eb; }
+
+.hint {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.error-msg {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #ef4444;
+  display: none;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+  color: #64748b;
+}
+.stat-row:last-child { border-bottom: none; }
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #3b82f6;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-step {
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: right;
+  max-width: 160px;
+  line-height: 1.4;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  margin-bottom: 14px;
+}
+
+.controls.card { display: flex; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+.btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-primary { background: #3b82f6; color: white; }
+.btn-primary.paused { background: #10b981; }
+.btn-secondary { background: #f1f5f9; color: #475569; }
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.speed-slider {
+  width: 150px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+.speed-label { min-width: 44px; font-variant-numeric: tabular-nums; }
+
+.viz-wrapper {
+  border-radius: 14px;
+  overflow: auto;
+  min-height: 450px;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.05), 0 1px 4px rgba(0,0,0,0.06);
+  background: #eef2f7;
+  position: relative;
+}
+
+.viz-canvas {
+  position: relative;
+}
+
+.phase-label {
+  position: absolute;
+  left: 18px;
+  font-size: 14px;
+  color: #b0bec5;
+  font-weight: 600;
+  line-height: 1.7;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.array-node {
+  position: absolute;
+  display: flex;
+  z-index: 2;
+}
+
+.array-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-weight: 500;
+  color: #1e293b;
+  border: 1.5px solid;
+  transition: background 0.3s;
+  flex-shrink: 0;
+}
+
+.cell-split { background: #fefce8; border-color: #d4b400; }
+.cell-leaf  { background: #dcfce7; border-color: #4ade80; }
+.cell-merge { background: #ffe4e6; border-color: #fb7185; }
+
+.inversion-badge {
+  position: absolute;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+  z-index: 10;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.7); }
+  60%  { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.anim-split { animation: fadeSlideIn 0.35s ease-out forwards; opacity: 0; }
+.anim-merge { animation: fadeSlideUp 0.35s ease-out forwards; opacity: 0; }
+.anim-badge { animation: popIn 0.4s ease-out 0.1s forwards; opacity: 0; }
+
+.arrows-svg {
+  position: absolute;
+  top: 0; left: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: visible;
+}
+
+.result-section {
+  margin-top: 14px;
+  padding: 18px 22px;
+  display: none;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.result-section.visible { display: flex; }
+
+.result-label { font-size: 13px; color: #64748b; margin-bottom: 6px; }
+.result-value { font-size: 18px; font-weight: 700; color: #1e293b; }
+.result-value.highlight { color: #3b82f6; font-size: 24px; }
+
+.sorted-array {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.sorted-cell {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #15803d;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>归并排序逆序对可视化系统</h1>
+    <p>交互式学习分治算法与逆序对统计过程</p>
+  </header>
+
+  <div class="top-section">
+    <div class="card input-card">
+      <div class="card-title">数组输入</div>
+      <div class="input-row">
+        <input type="text" id="arrayInput" class="array-input" value="1, 2, 3, 2, 3, 1" autocomplete="off" spellcheck="false">
+        <button class="btn-update" id="updateBtn">更新数据</button>
+      </div>
+      <div class="hint">支持逗号或空格分隔，建议长度 2-16</div>
+      <div class="error-msg" id="errorMsg"></div>
+    </div>
+
+    <div class="card stats-card">
+      <div class="card-title">统计结果</div>
+      <div class="stat-row">
+        <span>当前逆序对</span>
+        <span class="stat-value" id="inversionCount">0</span>
+      </div>
+      <div class="stat-row">
+        <span>当前步骤</span>
+        <span class="stat-step" id="currentStep">等待开始...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card controls">
+    <button class="btn btn-primary" id="startBtn">▷ 开始执行</button>
+    <button class="btn btn-secondary" id="resetBtn">↺ 重置</button>
+    <button class="btn btn-secondary" id="randomBtn">⇌ 随机生成</button>
+    <div class="speed-control">
+      <span>演示速度</span>
+      <input type="range" class="speed-slider" id="speedSlider" min="100" max="2000" step="100" value="800">
+      <span class="speed-label" id="speedDisplay">800ms</span>
+    </div>
+  </div>
+
+  <div class="viz-wrapper" id="vizWrapper">
+    <div class="viz-canvas" id="vizCanvas"></div>
+  </div>
+
+  <div class="card result-section" id="resultSection">
+    <div class="result-item">
+      <div class="result-label">总逆序对数</div>
+      <div class="result-value highlight" id="finalInversions">—</div>
+    </div>
+    <div class="result-item">
+      <div class="result-label">排序后数组</div>
+      <div class="sorted-array" id="sortedArray"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const PAD_X = 80;
+const PAD_Y = 28;
+const MOD   = 1000000007;
+
+let CELL_W, CELL_H, CELL_GAP, CELL_TOTAL, NODE_H, LEVEL_H, DASHED_GAP;
+
+function computeSizes(n) {
+  if      (n <= 8)  { CELL_W = 42; LEVEL_H = 110; }
+  else if (n <= 12) { CELL_W = 36; LEVEL_H = 100; }
+  else if (n <= 16) { CELL_W = 30; LEVEL_H = 90;  }
+  else              { CELL_W = 24; LEVEL_H = 80;  }
+  CELL_GAP   = 4;
+  CELL_TOTAL = CELL_W + CELL_GAP;
+  CELL_H     = CELL_W;
+  NODE_H     = CELL_H + 4;
+  DASHED_GAP = 64;
+}
+
+let tree        = null;
+let steps       = [];
+let stepIdx     = 0;
+let maxDepth    = 0;
+let isRunning   = false;
+let isPaused    = false;
+let animTimer   = null;
+let runningInv  = 0;
+let currentArr  = [1, 2, 3, 2, 3, 1];
+let positions   = new Map();
+let svgEl       = null;
+let canvasEl    = null;
+let _nodeId     = 0;
+
+function buildTree(arr, start, end, depth) {
+  const id = _nodeId++;
+  const values = arr.slice(start, end + 1);
+  const node = { id, start, end, depth, origValues: values, sortedValues: null, inversions: 0, leftChild: null, rightChild: null };
+
+  if (start === end) {
+    node.sortedValues = [...values];
+    return node;
+  }
+
+  const mid = Math.floor((start + end) / 2);
+  node.leftChild  = buildTree(arr, start, mid, depth + 1);
+  node.rightChild = buildTree(arr, mid + 1, end, depth + 1);
+
+  const L = node.leftChild.sortedValues;
+  const R = node.rightChild.sortedValues;
+  const merged = [];
+  let i = 0, j = 0, inv = 0;
+  while (i < L.length && j < R.length) {
+    if (L[i] <= R[j]) {
+      merged.push(L[i++]);
+    } else {
+      inv = (inv + (L.length - i)) % MOD;
+      merged.push(R[j++]);
+    }
+  }
+  while (i < L.length) merged.push(L[i++]);
+  while (j < R.length) merged.push(R[j++]);
+
+  node.sortedValues = merged;
+  node.inversions   = inv;
+  return node;
+}
+
+function treeMaxDepth(node) {
+  if (!node.leftChild) return node.depth;
+  return Math.max(treeMaxDepth(node.leftChild), treeMaxDepth(node.rightChild));
+}
+
+function generateSteps(node, parentId) {
+  const result = [];
+  function dfs(n, pid) {
+    result.push({ type: 'split', node: n, parentId: pid });
+    if (n.leftChild) {
+      dfs(n.leftChild,  n.id);
+      dfs(n.rightChild, n.id);
+      result.push({ type: 'merge', node: n });
+    }
+  }
+  dfs(node, null);
+  return result;
+}
+
+function nSplitX(node)  { return node.start * CELL_TOTAL + PAD_X; }
+function nSplitY(node)  { return node.depth * LEVEL_H + PAD_Y; }
+function nWidth(node)   { return (node.end - node.start + 1) * CELL_TOTAL - CELL_GAP; }
+function nCenterX(node) { return nSplitX(node) + nWidth(node) / 2; }
+function dashedLineY()  { return maxDepth * LEVEL_H + PAD_Y + NODE_H + DASHED_GAP * 0.4; }
+function nMergeY(node)  { return dashedLineY() + DASHED_GAP * 0.6 + (maxDepth - node.depth) * LEVEL_H; }
+
+function precomputePositions(node) {
+  positions.set(node.id, {
+    sx: nSplitX(node),   sy: nSplitY(node),
+    cx: nCenterX(node),  w: nWidth(node),
+    splitBottom: nSplitY(node) + NODE_H,
+    my: node.leftChild ? nMergeY(node) : null,
+    mergeBottom: node.leftChild ? nMergeY(node) + NODE_H : null,
+  });
+  if (node.leftChild) {
+    precomputePositions(node.leftChild);
+    precomputePositions(node.rightChild);
+  }
+}
+
+function initCanvas(n) {
+  const totalW = n * CELL_TOTAL + PAD_X * 2;
+  const totalH = nMergeY(tree) + NODE_H + PAD_Y + 20;
+
+  canvasEl = document.getElementById('vizCanvas');
+  canvasEl.innerHTML = '';
+  canvasEl.style.width    = totalW + 'px';
+  canvasEl.style.height   = totalH + 'px';
+  canvasEl.style.minWidth = '100%';
+
+  svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svgEl.setAttribute('width',  totalW);
+  svgEl.setAttribute('height', totalH);
+  svgEl.classList.add('arrows-svg');
+
+  const defs   = makeSvgEl('defs');
+  const marker = makeSvgEl('marker');
+  marker.setAttribute('id', 'arr');
+  marker.setAttribute('markerWidth',  '8');
+  marker.setAttribute('markerHeight', '6');
+  marker.setAttribute('refX', '7');
+  marker.setAttribute('refY', '3');
+  marker.setAttribute('orient', 'auto');
+  const poly = makeSvgEl('polygon');
+  poly.setAttribute('points', '0 0, 8 3, 0 6');
+  poly.setAttribute('fill', '#94a3b8');
+  marker.appendChild(poly);
+  defs.appendChild(marker);
+  svgEl.appendChild(defs);
+
+  const dlY  = dashedLineY();
+  const dash = makeSvgEl('line');
+  dash.setAttribute('x1', '0');
+  dash.setAttribute('y1', dlY);
+  dash.setAttribute('x2', totalW);
+  dash.setAttribute('y2', dlY);
+  dash.setAttribute('stroke', '#c0ccd8');
+  dash.setAttribute('stroke-width', '1.5');
+  dash.setAttribute('stroke-dasharray', '7 5');
+  svgEl.appendChild(dash);
+
+  canvasEl.appendChild(svgEl);
+
+  addPhaseLabel('先<br>分', PAD_Y + (maxDepth * LEVEL_H) / 2 - 20);
+  addPhaseLabel('再<br>并', dlY + DASHED_GAP * 0.6 + (maxDepth * LEVEL_H) / 2 - 20);
+}
+
+function addPhaseLabel(html, top) {
+  const el = document.createElement('div');
+  el.className = 'phase-label';
+  el.innerHTML = html;
+  el.style.top = top + 'px';
+  canvasEl.appendChild(el);
+}
+
+function makeSvgEl(tag) {
+  return document.createElementNS('http://www.w3.org/2000/svg', tag);
+}
+
+function renderStep(step) {
+  if (step.type === 'split') renderSplit(step);
+  else                       renderMerge(step);
+}
+
+function renderSplit({ node, parentId }) {
+  const pos    = positions.get(node.id);
+  const isLeaf = !node.leftChild;
+
+  const nodeEl = createArrayNode(pos.sx, pos.sy, node.origValues, isLeaf ? 'cell-leaf' : 'cell-split');
+  nodeEl.classList.add('anim-split');
+  canvasEl.appendChild(nodeEl);
+
+  if (parentId !== null) {
+    const ppos = positions.get(parentId);
+    drawArrow(ppos.cx, ppos.splitBottom, pos.cx, pos.sy);
+  }
+
+  setStep(isLeaf
+    ? `分割到单元素 [${node.origValues[0]}]`
+    : `分割区间 [${node.origValues.join(', ')}]`);
+}
+
+function renderMerge({ node }) {
+  const pos = positions.get(node.id);
+
+  const nodeEl = createArrayNode(pos.sx, pos.my, node.sortedValues, 'cell-merge');
+  nodeEl.classList.add('anim-merge');
+  canvasEl.appendChild(nodeEl);
+
+  const badge = document.createElement('div');
+  badge.className = 'inversion-badge anim-badge';
+  badge.textContent = '+' + node.inversions;
+  badge.style.left = (pos.cx - 15) + 'px';
+  badge.style.top  = (pos.my + NODE_H + 4) + 'px';
+  canvasEl.appendChild(badge);
+
+  drawMergeArrowFromChild(node.leftChild,  node);
+  drawMergeArrowFromChild(node.rightChild, node);
+
+  runningInv = (runningInv + node.inversions) % MOD;
+  document.getElementById('inversionCount').textContent = runningInv;
+  setStep(`合并 [${node.origValues.join(', ')}]，发现逆序对 +${node.inversions}`);
+}
+
+function drawMergeArrowFromChild(child, parent) {
+  const cpos  = positions.get(child.id);
+  const ppos  = positions.get(parent.id);
+  const fromY = !child.leftChild ? cpos.splitBottom : cpos.mergeBottom;
+  drawArrow(cpos.cx, fromY, ppos.cx, ppos.my);
+}
+
+function createArrayNode(x, y, values, cellClass) {
+  const wrap = document.createElement('div');
+  wrap.className = 'array-node';
+  wrap.style.left = x + 'px';
+  wrap.style.top  = y + 'px';
+  wrap.style.gap  = CELL_GAP + 'px';
+
+  values.forEach(v => {
+    const c = document.createElement('div');
+    c.className = `array-cell ${cellClass}`;
+    c.style.width    = CELL_W + 'px';
+    c.style.height   = CELL_H + 'px';
+    c.style.fontSize = (CELL_W < 30 ? 11 : CELL_W < 36 ? 13 : 15) + 'px';
+    c.textContent = v;
+    wrap.appendChild(c);
+  });
+
+  return wrap;
+}
+
+function drawArrow(x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.sqrt(dx*dx + dy*dy) || 1;
+  const ax2 = x2 - (dx / len) * 9;
+  const ay2 = y2 - (dy / len) * 9;
+  const my  = (y1 + ay2) / 2;
+  const d   = `M ${x1.toFixed(1)} ${y1.toFixed(1)} C ${x1.toFixed(1)} ${my.toFixed(1)} ${ax2.toFixed(1)} ${my.toFixed(1)} ${ax2.toFixed(1)} ${ay2.toFixed(1)}`;
+
+  const path = makeSvgEl('path');
+  path.setAttribute('d', d);
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', '#94a3b8');
+  path.setAttribute('stroke-width', '1.5');
+  path.setAttribute('marker-end', 'url(#arr)');
+  svgEl.appendChild(path);
+}
+
+function startAnimation() {
+  if (isRunning && !isPaused) return;
+
+  if (isPaused) {
+    isPaused = false;
+    updateStartBtn();
+    scheduleNext();
+    return;
+  }
+
+  isRunning  = true;
+  isPaused   = false;
+  stepIdx    = 0;
+  runningInv = 0;
+  document.getElementById('inversionCount').textContent = '0';
+  document.getElementById('resultSection').classList.remove('visible');
+  initCanvas(currentArr.length);
+  updateStartBtn();
+  scheduleNext();
+}
+
+function scheduleNext() {
+  if (stepIdx >= steps.length) {
+    isRunning = false;
+    updateStartBtn();
+    showResult();
+    return;
+  }
+  if (isPaused) return;
+
+  const speed = parseInt(document.getElementById('speedSlider').value);
+  animTimer = setTimeout(() => {
+    renderStep(steps[stepIdx++]);
+    scheduleNext();
+  }, speed);
+}
+
+function resetAll() {
+  clearTimeout(animTimer);
+  isRunning  = false;
+  isPaused   = false;
+  stepIdx    = 0;
+  runningInv = 0;
+  document.getElementById('inversionCount').textContent = '0';
+  setStep('等待开始...');
+  document.getElementById('resultSection').classList.remove('visible');
+  updateStartBtn();
+  if (canvasEl) initCanvas(currentArr.length);
+}
+
+function updateStartBtn() {
+  const btn = document.getElementById('startBtn');
+  if (!isRunning || stepIdx >= steps.length) {
+    btn.textContent = '▷ 开始执行';
+    btn.classList.remove('paused');
+  } else if (isPaused) {
+    btn.textContent = '▷ 继续';
+    btn.classList.add('paused');
+  } else {
+    btn.textContent = '⏸ 暂停';
+    btn.classList.remove('paused');
+  }
+}
+
+function showResult() {
+  document.getElementById('resultSection').classList.add('visible');
+  document.getElementById('finalInversions').textContent = runningInv;
+  setStep(`完成！总逆序对数: ${runningInv}`);
+
+  const sortedEl = document.getElementById('sortedArray');
+  sortedEl.innerHTML = '';
+  tree.sortedValues.forEach(v => {
+    const c = document.createElement('div');
+    c.className = 'sorted-cell';
+    c.textContent = v;
+    sortedEl.appendChild(c);
+  });
+}
+
+function setStep(text) {
+  document.getElementById('currentStep').textContent = text;
+}
+
+function initData(arr) {
+  _nodeId = 0;
+  computeSizes(arr.length);
+  tree     = buildTree(arr, 0, arr.length - 1, 0);
+  maxDepth = treeMaxDepth(tree);
+  steps    = generateSteps(tree, null);
+  positions.clear();
+  precomputePositions(tree);
+  initCanvas(arr.length);
+}
+
+function parseInput(str) {
+  const parts = str.split(/[\s,，]+/).map(s => s.trim()).filter(Boolean);
+  if (!parts.length) return null;
+  const nums = parts.map(Number);
+  if (nums.some(isNaN)) return null;
+  if (!nums.every(n => Number.isInteger(n))) return null;
+  return nums;
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+function applyInput(arr) {
+  clearTimeout(animTimer);
+  isRunning  = false;
+  isPaused   = false;
+  stepIdx    = 0;
+  runningInv = 0;
+  currentArr = arr;
+  document.getElementById('inversionCount').textContent = '0';
+  setStep('等待开始...');
+  document.getElementById('resultSection').classList.remove('visible');
+  updateStartBtn();
+  initData(arr);
+}
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  if (isRunning && !isPaused) pauseAnimation();
+  else startAnimation();
+});
+
+function pauseAnimation() {
+  isPaused = true;
+  clearTimeout(animTimer);
+  updateStartBtn();
+}
+
+document.getElementById('resetBtn').addEventListener('click', resetAll);
+
+document.getElementById('randomBtn').addEventListener('click', () => {
+  const len = Math.floor(Math.random() * 7) + 5;
+  const arr = Array.from({ length: len }, () => Math.floor(Math.random() * 20));
+  document.getElementById('arrayInput').value = arr.join(', ');
+  applyInput(arr);
+});
+
+document.getElementById('updateBtn').addEventListener('click', () => {
+  const arr = parseInput(document.getElementById('arrayInput').value);
+  if (!arr) { showError('请输入有效的整数数组'); return; }
+  if (arr.length < 2) { showError('数组长度至少为 2'); return; }
+  if (arr.length > 50000) { showError('数组长度不能超过 50000'); return; }
+  if (arr.length > 24) {
+    if (!confirm(`数组长度 ${arr.length} 较大，建议使用 2-16 个元素以获得最佳可视化效果。继续？`)) return;
+  }
+  applyInput(arr);
+});
+
+document.getElementById('arrayInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('updateBtn').click();
+});
+
+document.getElementById('speedSlider').addEventListener('input', (e) => {
+  document.getElementById('speedDisplay').textContent = e.target.value + 'ms';
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+  currentArr = [1, 2, 3, 2, 3, 1];
+  document.getElementById('arrayInput').value = currentArr.join(', ');
+  initData(currentArr);
+});
+</script>
+</body>
+</html>
